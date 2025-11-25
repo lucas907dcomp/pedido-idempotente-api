@@ -6,18 +6,41 @@
 ![Postgres](https://img.shields.io/badge/PostgreSQL-15-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
 [![Java CI with Maven](https://github.com/lucas907dcomp/pedido-idempotente-api/actions/workflows/maven.yml/badge.svg)](https://github.com/lucas907dcomp/pedido-idempotente-api/actions/workflows/maven.yml)
 
-## 📄 Sobre o Projeto
-API REST desenvolvida para simular o processamento de pedidos sensíveis com garantia de **Idempotência**.
-O projeto previne duplicidade de transações em cenários de falha de rede, retries automáticos ou cliques múltiplos, utilizando uma chave de idempotência (`Idempotency-Key`).
+---
 
-Focado em resolver problemas reais de **duplicidade de pagamentos** e **consistência eventual** em sistemas distribuídos.
+## 📄 Sobre o Projeto
+API REST desenvolvida para simular o processamento de pedidos sensíveis com **garantia de Idempotência**, evitando duplicidade em cenários como falhas de rede, retries automáticos e múltiplos cliques.
+
+Ela assegura que **a mesma requisição, com a mesma Idempotency-Key, sempre retorna o mesmo resultado**, garantindo consistência e segurança em fluxos críticos como pagamentos e pedidos.
+
+---
+
+## 🔍 Por que Idempotência?
+Em arquiteturas distribuídas, falhas acontecem — e sem idempotência, elas geram:
+
+- pagamentos duplicados  
+- pedidos criados repetidamente  
+- inconsistência de estoque  
+- perda de confiabilidade do sistema  
+
+✨ **Com idempotência, o mesmo pedido nunca é processado duas vezes.**
+
+---
+
+## ⚙️ Funcionalidades
+- ✔️ Idempotência completa via `Idempotency-Key`
+- ✔️ Persistência do histórico de requisições
+- ✔️ Retorno consistente em retries
+- ✔️ Logs estruturados em JSON (padrão enterprise)
+- ✔️ Documentação OpenAPI + Swagger UI
+- ✔️ Observabilidade com Spring Actuator
+- ✔️ Docker + Docker Compose
+- ✔️ CI/CD com GitHub Actions
+- ✔️ Código limpo seguindo boas práticas
 
 ---
 
 ## 🏛️ Arquitetura
-
-Diferente de aplicações CRUD comuns, aqui o foco é a resiliência do fluxo de dados.
-Se uma requisição chegar com uma chave já processada, a API retorna **exatamente o mesmo resultado anterior** (status 200) sem processar novamente.
 
 ```mermaid
 sequenceDiagram
@@ -25,15 +48,16 @@ sequenceDiagram
     participant API
     participant Banco
     
-    Cliente->>API: POST /pedidos (Key: abc-123)
+    Cliente->>API: POST /pedidos (Idempotency-Key: abc-123)
     API->>Banco: Busca Key abc-123
+    
     alt Chave não existe
         API->>Banco: Salva Pedido + Key
         Banco-->>API: Sucesso
-        API-->>Cliente: 201 Created (Novo Pedido)
+        API-->>Cliente: 201 Created
     else Chave já existe
-        Banco-->>API: Retorna Pedido Antigo
-        API-->>Cliente: 200 OK (Cache/Idempotente)
+        Banco-->>API: Retorna Pedido Anterior
+        API-->>Cliente: 200 OK
     end
 ```
 
@@ -41,73 +65,74 @@ sequenceDiagram
 
 ## 🛠 Tecnologias & Bibliotecas
 
-Principais tecnologias utilizadas na construção deste serviço:
+As principais tecnologias utilizadas na construção deste serviço:
 
-* **Java 21** (Versão LTS)
-* **Spring Boot 3.5.7** (Framework Base)
-* **Spring Data JPA** (Persistência/Hibernate)
-* **PostgreSQL 15** (Banco de Dados Relacional)
-* **Docker & Docker Compose** (Containerização e Orquestração)
-* **Lombok** (Redução de código boilerplate)
-* **Logstash Logback Encoder** (Logs Estruturados em JSON para observabilidade)
-* **SpringDoc OpenAPI** (Documentação Swagger automatizada)
-* **Spring Boot Actuator** (Endpoints de saúde e métricas)
-* **GitHub Actions** (Pipeline de CI/CD automatizado)
+- **Java 21** — versão LTS, mais moderna e performática  
+- **Spring Boot 3.5.7** — framework principal  
+- **Spring Web** — API REST  
+- **Spring Data JPA (Hibernate)** — persistência  
+- **PostgreSQL 15** — banco relacional  
+- **Docker & Docker Compose** — containerização  
+- **Spring Boot Actuator** — saúde, métricas e info da aplicação  
+- **SpringDoc OpenAPI** — documentação Swagger automática  
+- **Logstash Logback Encoder** — logs estruturados em JSON  
+- **Lombok** — redução de boilerplate  
+- **GitHub Actions** — pipeline CI/CD automatizado  
 
 ---
 
-## 🚀 Como Rodar (Getting Started)
+## 🚀 Como Rodar
 
-### Pré-requisitos
-* Docker e Docker Compose instalados.
+### 1️⃣ Pré-requisitos
+- Docker instalado
 
-### Passo 1: Build e Run (Via Docker)
-Não é necessário ter Java ou Maven instalados na máquina local, o Docker cuida de todo o processo de build e execução.
+### 2️⃣ Subir a aplicação
 
 ```bash
 docker-compose up --build
 ```
+A aplicação ficará disponível em:
+👉 http://localhost:8080
 
-A aplicação estará rodando em: `http://localhost:8080`
+---
+## 🔌 Endpoints
+
+| Método | Rota            | Descrição                                                |
+|--------|------------------|----------------------------------------------------------|
+| POST   | `/pedidos`       | Criação com idempotência (`Idempotency-Key`)            |
+| GET    | `/pedidos/{id}`  | Consulta de pedido                                      |
+| GET    | `/actuator/info` | Informações da build                                    |
+| GET    | `/actuator/health` | Saúde da aplicação                                   |
 
 ---
 
-## 🔌 Endpoints & Exemplos
+### 📚 Documentação
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `POST` | `/pedidos` | Cria um pedido (Requer header `Idempotency-Key`) |
-| `GET` | `/pedidos/{id}` | Busca detalhes de um pedido |
-| `GET` | `/actuator/info` | Informações da Build e Versão |
-| `GET` | `/actuator/health` | Saúde da aplicação |
+- **Swagger UI:** http://localhost:8080/swagger-ui/index.html  
+- **OpenAPI JSON:** http://localhost:8080/v3/api-docs
+- **Repositório GitHub:** https://github.com/lucas907dcomp/pedido-idempotente-api 
 
-### Exemplo de Requisição (CURL)
+---
+
+## 🧪 Exemplo de Requisição (cURL)
+
 ```bash
 curl -X POST http://localhost:8080/pedidos \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: unique-key-123" \
-  -d '{"produto": "Notebook", "quantidade": 1, "valor": 3500.00}'
+  -d '{"valor": 3500.00}'
 ```
-
----
-
-## 📚 Documentação & Links
-
-* **Swagger UI (Visual):** [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-* **OpenAPI JSON:** [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
-* **Repositório:** [https://github.com/lucas907dcomp/pedido-idempotente-api](https://github.com/lucas907dcomp/pedido-idempotente-api)
 
 ---
 
 ## 📦 Versionamento
 
-**1.0.0** - Versão inicial com suporte completo a idempotência e containerização.
+**1.0.0** — Versão inicial funcional com suporte completo a idempotência e containerização.
 
 ---
 
-## 👨‍💻 Autores
+## 👨‍💻 Autor
 
-* **Lucas Aragão** - *Java Backend Developer*
+**Lucas Aragão** — Backend Developer (Java / Spring)  
+📩 Conecte-se comigo!  
 
-Sinta-se à vontade para seguir no GitHub e conectar-se!
-Obrigado pela visita e *happy coding*! 🚀
